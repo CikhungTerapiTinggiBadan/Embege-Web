@@ -17,6 +17,7 @@ export default function ScanPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [dailyCalories, setDailyCalories] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
 
   // State untuk Pop-up Kustom
   const [popup, setPopup] = useState({
@@ -85,7 +86,9 @@ export default function ScanPage() {
   const handleSaveToCloud = async () => {
     if (!user) return triggerPopup("error", "Silakan login dulu bos!");
     if (components.length === 0) return triggerPopup("error", "Belum ada data makanan di piringmu!");
+    if (isSaving) return; // Mencegah klik berkali-kali
 
+    setIsSaving(true);
     try {
       const totalCal = components.reduce((sum, item) => sum + item.calories * item.portion, 0);
       const today = new Date().toLocaleDateString('id-ID');
@@ -103,6 +106,8 @@ export default function ScanPage() {
       setComponents([]); // Bersihkan piring setelah simpan
     } catch (e) {
       triggerPopup("error", "Gagal menyimpan data ke cloud server.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -117,7 +122,8 @@ export default function ScanPage() {
     formData.append("file", file);
     
     try {
-      const res = await fetch("http://127.0.0.1:8000/scan-food", { method: "POST", body: formData });
+      // PERBAIKAN: Menggunakan relative path untuk Vercel API
+      const res = await fetch("/api/scan-food", { method: "POST", body: formData });
       const data = await res.json();
       
       const items = data.components || []; 
@@ -137,7 +143,8 @@ export default function ScanPage() {
     if (!searchQuery) return;
     setSearchLoading(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/search-food?query=${searchQuery}`);
+      // PERBAIKAN: Menggunakan relative path untuk Vercel API
+      const response = await fetch(`/api/search-food?query=${searchQuery}`);
       const result = await response.json();
       if (result.status === "success" || result.data) {
         const newItem = result.data || result;
@@ -152,11 +159,15 @@ export default function ScanPage() {
   };
 
   const handleUpdatePortion = (index, delta) => {
+    // PERBAIKAN: Cara update state array di React yang lebih aman (tidak mutate langsung)
     setComponents((prev) => {
       const newComponents = [...prev];
-      const newPortion = newComponents[index].portion + delta;
+      const currentItem = newComponents[index];
+      const newPortion = currentItem.portion + delta;
+      
       if (newPortion <= 0) return newComponents.filter((_, i) => i !== index);
-      newComponents[index].portion = newPortion;
+      
+      newComponents[index] = { ...currentItem, portion: newPortion };
       return newComponents;
     });
   };
