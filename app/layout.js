@@ -23,7 +23,7 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-  title: "NutriTrack",
+  title: "MBG",
   description: "Makan Sehat, Hidup Hebat",
 };
 

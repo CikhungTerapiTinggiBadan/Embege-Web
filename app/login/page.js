@@ -456,7 +456,7 @@ export default function AuthPage() {
 
         <p className="text-center mt-8 text-[#8b90b8] text-xs font-bold">
           Dengan melanjutkan, kamu menyetujui{" "}
-          <span className="text-[#6b7fe8]">Ketentuan Layanan</span> NutriTrack.
+          <span className="text-[#6b7fe8]">Ketentuan Layanan</span> MBG.
         </p>
       </div>
     </main>
