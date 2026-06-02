@@ -4,7 +4,7 @@ import shutil
 import os
 
 # Import dari file processor.py yang ada di folder yang sama
-from processor import identify_food_and_nutrition, get_nutrition_by_text
+from api.processor import identify_food_and_nutrition, get_nutrition_by_text
 
 app = FastAPI()
 
