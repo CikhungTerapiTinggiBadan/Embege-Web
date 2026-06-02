@@ -3,18 +3,23 @@ from google.api_core.exceptions import ResourceExhausted
 import os
 import json
 from PIL import Image
-from dotenv import load_dotenv
 
-load_dotenv()
+# 1. Hapus load_dotenv() murni untuk mencegah Vercel membaca file .env lokal yang mungkin nyasar di GitHub.
+# Kita pakai try-except untuk load_dotenv agar tetap aman saat di-run di localhost
+try:
+    from dotenv import load_dotenv
+    load_dotenv(override=False) # override=False memastikan environment variable Vercel TIDAK tertimpa
+except ImportError:
+    pass
 
-# 1. Kumpulkan API Keys
+# 2. Kumpulkan API Keys
 API_KEYS = [
     os.getenv("GOBLOK_API_KEYZ"),
     os.getenv("GOBLOK_API_KEYB"),
 ]
-API_KEYS = [key for key in API_KEYS if key] # Bersihkan dari nilai kosong
+# Bersihkan dari nilai kosong (None)
+API_KEYS = [key for key in API_KEYS if key] 
 
-# Variabel global untuk index key
 current_key_index = 0
 json_config = {"response_mime_type": "application/json"}
 
@@ -23,7 +28,6 @@ def generate_with_fallback(prompt, image=None):
     
     for _ in range(len(API_KEYS)):
         try:
-            # Wajib panggil configure di dalam loop agar key terganti saat error
             genai.configure(api_key=API_KEYS[current_key_index])
             model = genai.GenerativeModel('gemini-2.5-flash', generation_config=json_config)
             
@@ -34,14 +38,19 @@ def generate_with_fallback(prompt, image=None):
                 
             return json.loads(response.text)
             
-        except ResourceExhausted:
-            print(f"Limit API Key {current_key_index + 1} habis. Ganti key...")
-            current_key_index = (current_key_index + 1) % len(API_KEYS)
-            
         except Exception as e:
-            print(f"Error AI: {e}")
-            return None
+            error_msg = str(e)
+            print(f"Error pada API Key ke-{current_key_index + 1}: {error_msg}")
             
+            # CEK ERROR: Ganti kunci jika error karena Limit (429) ATAU Kunci Invalid/Kadaluarsa (400)
+            if "429" in error_msg or "ResourceExhausted" in error_msg or "400" in error_msg or "API_KEY_INVALID" in error_msg:
+                print("Mengalihkan ke API Key berikutnya...")
+                current_key_index = (current_key_index + 1) % len(API_KEYS)
+            else:
+                # Jika error lain (misal: koneksi putus), langsung berhenti agar tidak looping sia-sia
+                return None
+                
+    print("GAWAT: Semua API Key gagal atau habis limit!")
     return None
 
 def identify_food_and_nutrition(image_path):
@@ -66,7 +75,6 @@ def identify_food_and_nutrition(image_path):
     """
     try:
         with Image.open(image_path) as img:
-            # Copy image ke memory agar file bisa ditutup dengan aman
             img_copy = img.copy() 
             
         hasil = generate_with_fallback(prompt, image=img_copy)
