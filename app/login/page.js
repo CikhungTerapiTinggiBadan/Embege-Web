@@ -260,7 +260,7 @@ export default function AuthPage() {
             <img src="/logo.svg" alt="Logo" className="w-15 h-15" />
 
           </div>
-          <h1 className="text-[#1e2240] text-3xl font-black">MGB</h1>
+          <h1 className="text-[#1e2240] text-3xl font-black">MBG</h1>
           <p className="text-[#8b90b8] font-bold">Mitra Bantuan Gizi</p>
         </div>
 
